@@ -1,0 +1,299 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Visual Reaction Test</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 25px;
+
+            font-family: Arial, sans-serif;
+            background: #172238;
+            color: white;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 750px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 38px;
+        }
+
+        .subtitle, .instructions {
+            color: #bfc9dc;
+            line-height: 1.6;
+        }
+
+        #reaction-box {
+            width: 100%;
+            min-height: 300px;
+            margin: 30px 0;
+
+            border: none;
+            border-radius: 20px;
+
+            background: #3478db;
+            color: white;
+
+            font-size: 24px;
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        #reaction-box.ready {
+            background: #e54848;
+        }
+
+        #reaction-box.finished {
+            background: #299b60;
+        }
+
+        #result {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 25px 0;
+        }
+
+        #message {
+            color: #bfc9dc;
+            min-height: 24px;
+        }
+
+        .button {
+            display: inline-block;
+            margin: 20px 8px 0;
+            padding: 12px 25px;
+
+            background: #3478db;
+            color: white;
+
+            text-decoration: none;
+            border: none;
+            border-radius: 10px;
+
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background: #4789e8;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        footer {
+            margin-top: 35px;
+            color: #8f9bb2;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+<main class="container">
+
+    <h1>Visual Reaction Test</h1>
+
+    <p class="subtitle">
+        Test how quickly you react to a visual signal!
+    </p>
+
+    <p class="instructions">
+        Click Start to begin.<br>
+        Wait for the screen to turn red, then click as quickly as possible.
+    </p>
+
+    <p id="trial-counter">Trial 0 of 3</p>
+
+    <button id="reaction-box">
+        Click to Start
+    </button>
+
+    <div id="result"></div>
+    <div id="message">Ready when you are!</div>
+
+    <button class="button" id="retry" hidden>
+        Restart Test
+    </button>
+
+    <button class="button" id="next-test" hidden>
+        Begin Test 2 →
+    </button>
+
+    <p>
+        <a href="index.html" class="button">← Back to Home</a>
+    </p>
+
+    <footer>
+        Reaction Time Experiment | Visual Reaction
+    </footer>
+
+</main>
+
+<script>
+    const box = document.getElementById("reaction-box");
+    const result = document.getElementById("result");
+    const message = document.getElementById("message");
+    const retry = document.getElementById("retry");
+    const nextTest = document.getElementById("next-test");
+    const trialCounter = document.getElementById("trial-counter");
+
+    const TOTAL_TRIALS = 3;
+
+    let state = "idle";
+    let startTime;
+    let timeout;
+
+    let trialResults = [];
+
+    function startTest() {
+        clearTimeout(timeout);
+
+        trialResults = [];
+
+        retry.hidden = true;
+        nextTest.hidden = true;
+
+        result.textContent = "";
+
+        startTrial();
+    }
+
+    function startTrial() {
+        clearTimeout(timeout);
+
+        state = "waiting";
+
+        box.className = "";
+        box.textContent = "Wait for RED...";
+
+        trialCounter.textContent =
+            `Trial ${trialResults.length + 1} of ${TOTAL_TRIALS}`;
+
+        message.textContent = "Don't click yet!";
+
+        const delay = 2000 + Math.random() * 3000;
+
+        timeout = setTimeout(() => {
+            state = "ready";
+
+            box.className = "ready";
+            box.textContent = "CLICK!";
+            message.textContent = "Click now!";
+
+            startTime = performance.now();
+
+        }, delay);
+    }
+
+    function finishTrial() {
+        const reactionTime = performance.now() - startTime;
+
+        trialResults.push(reactionTime);
+
+        if (trialResults.length < TOTAL_TRIALS) {
+            state = "idle";
+
+            box.className = "finished";
+            box.textContent = "Good job!";
+
+            message.textContent =
+                "Trial recorded. Get ready for the next one.";
+
+            setTimeout(() => {
+                startTrial();
+            }, 1000);
+
+        } else {
+            finishTest();
+        }
+    }
+
+    function finishTest() {
+        state = "finished";
+
+        box.className = "finished";
+        box.textContent = "Test Complete!";
+
+        const average =
+            trialResults.reduce((sum, time) => sum + time, 0)
+            / trialResults.length;
+
+        result.textContent =
+            `Average: ${Math.round(average)} milliseconds`;
+
+        message.textContent =
+            "All 3 trials completed!";
+
+        trialCounter.textContent =
+            "Trial 3 of 3 — Complete";
+
+        // Save results for the rest of the experiment
+        sessionStorage.setItem(
+            "visualReactionResults",
+            JSON.stringify({
+                trials: trialResults,
+                average: average
+            })
+        );
+
+        retry.hidden = false;
+        nextTest.hidden = false;
+    }
+
+    box.addEventListener("click", () => {
+
+        if (state === "idle") {
+            startTest();
+        }
+
+        else if (state === "waiting") {
+            clearTimeout(timeout);
+
+            state = "idle";
+
+            box.className = "";
+            box.textContent = "Too Early!";
+
+            message.textContent =
+                "You clicked before the signal. Try again!";
+
+            retry.hidden = false;
+        }
+
+        else if (state === "ready") {
+            finishTrial();
+        }
+    });
+
+    retry.addEventListener("click", startTest);
+
+    nextTest.addEventListener("click", () => {
+        window.location.href = "visual-decision.html";
+    });
+</script>
+
+</body>
+</html>

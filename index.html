@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Reaction Time Experiment</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            font-family: Arial, sans-serif;
+
+            background: #172238;
+            color: white;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding: 30px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #bfc9dc;
+            margin-bottom: 40px;
+        }
+
+        .tests {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .test-button {
+            display: block;
+
+            padding: 25px;
+            border-radius: 18px;
+
+            color: white;
+            text-decoration: none;
+
+            text-align: left;
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+        }
+
+        .test-button h2 {
+            margin-top: 0;
+        }
+
+        .test-button p {
+            line-height: 1.5;
+        }
+
+        .test-button span {
+            font-weight: bold;
+        }
+
+        .red {
+            background: #e54848;
+        }
+
+        .blue {
+            background: #3478db;
+        }
+
+        .green {
+            background: #299b60;
+        }
+
+        .test-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-button:focus-visible {
+            outline: 3px solid white;
+            outline-offset: 4px;
+        }
+
+        footer {
+            margin-top: 40px;
+            color: #8f9bb2;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 32px;
+            }
+
+            .test-button {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <h1>Reaction Time Experiment</h1>
+
+        <p class="subtitle">
+            Take three different tests measuring reaction time
+            and decision-making and see your average across all tests.
+        </p>
+
+        <div class="tests">
+
+            <a href="visual-reaction.html" class="test-button red">
+                <h2>Visual Reaction</h2>
+                <p>Left click as quickly as possible when the screen changes color.</p>
+                <span>Begin Test →</span>
+            </a>
+
+            <a href="visual-decision.html" class="test-button blue">
+                <h2>Visual Decision</h2>
+                <p>Determine which direction a group of moving dots is traveling and respond using the A or L keys.</p>
+                <span>Begin Test →</span>
+            </a>
+
+            <a href="auditory-reaction.html" class="test-button green">
+                <h2>Auditory Reaction</h2>
+                <p>Listen for auditory cues and respond as quickly as possible using the A or L keys.</p>
+                <span>Begin Test →</span>
+            </a>
+
+        </div>
+
+        <footer>
+            Reaction Time Experiment | Science Fair Project
+        </footer>
+
+    </main>
+
+</body>
+</html>

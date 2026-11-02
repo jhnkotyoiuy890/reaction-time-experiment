@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment Results</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #1a2a4a;
+            color: white;
+            text-align: center;
+            padding: 30px 15px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            max-width: 700px;
+            margin: 30px auto;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 12px;
+        }
+
+        .result-card h2 {
+            margin-top: 0;
+        }
+
+        .average {
+            font-size: 28px;
+            font-weight: bold;
+            color: #75b5ff;
+        }
+
+        button {
+            background: #3478f6;
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            margin: 10px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .error {
+            color: #ffaaaa;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Experiment Results</h1>
+    <p>Your reaction time experiment summary</p>
+
+    <div class="glass" id="results">
+        Loading results...
+    </div>
+
+    <button onclick="location.href='index.html'">
+        Back to Homepage
+    </button>
+
+    <script>
+        const resultsDiv = document.getElementById("results");
+
+        // Retrieve the results from the three tests.
+        const visual = JSON.parse(
+            sessionStorage.getItem("visualReactionResults") || "null"
+        );
+
+        const decision = JSON.parse(
+            sessionStorage.getItem("visualDecisionResults") || "null"
+        );
+
+        const auditory = JSON.parse(
+            sessionStorage.getItem("auditoryReactionResults") || "null"
+        );
+
+        // Check that all tests have been completed.
+        if (!visual || !decision || !auditory) {
+            resultsDiv.innerHTML = `
+                <h2 class="error">Results not available yet!</h2>
+                <p>Please complete all three tests before viewing your results.</p>
+            `;
+        } else {
+            // Get the individual trial reaction times.
+            const visualTrials = visual.trials;
+            const decisionTrials = decision.trials;
+            const auditoryTrials = auditory.trials;
+
+            // Combine all individual correct-trial times.
+            const allTrials = [
+                ...visualTrials,
+                ...decisionTrials,
+                ...auditoryTrials
+            ];
+
+            // Calculate the overall average.
+            const overallAverage =
+                allTrials.reduce((sum, time) => sum + time, 0)
+                / allTrials.length;
+
+            resultsDiv.innerHTML = `
+                <div class="result-card">
+                    <h2>Test 1: Visual Reaction</h2>
+                    <p class="average">${visual.average} ms</p>
+                    <p>Average reaction time</p>
+                </div>
+
+                <div class="result-card">
+                    <h2>Test 2: Visual Decision</h2>
+                    <p class="average">${decision.average} ms</p>
+                    <p>Average correct reaction time</p>
+                    <p>Accuracy: ${decision.accuracy}%</p>
+                    <p>Total attempts: ${decision.totalAttempts}</p>
+                </div>
+
+                <div class="result-card">
+                    <h2>Test 3: Auditory Decision</h2>
+                    <p class="average">${auditory.average} ms</p>
+                    <p>Average correct reaction time</p>
+                    <p>Accuracy: ${auditory.accuracy}%</p>
+                    <p>Total attempts: ${auditory.totalAttempts}</p>
+                </div>
+
+                <div class="result-card">
+                    <h2>Overall Average</h2>
+                    <p class="average">${Math.round(overallAverage)} ms</p>
+                    <p>Across ${allTrials.length} correct trials</p>
+                </div>
+
+                <p>
+                    Reaction times represent the average of correct
+                    responses only. Accuracy is reported separately
+                    for the decision tests.
+                </p>
+            `;
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test 2 - Visual Decision</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #1a2a4a;
+            color: white;
+            text-align: center;
+            padding: 30px 15px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        canvas {
+            display: block;
+            margin: 25px auto;
+            background: white;
+            border-radius: 12px;
+            max-width: 100%;
+        }
+
+        button {
+            background: #3478f6;
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            margin: 8px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #58657d;
+            cursor: not-allowed;
+        }
+
+        #status {
+            font-size: 20px;
+            margin: 20px;
+        }
+
+        #results {
+            margin-top: 25px;
+            font-size: 18px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Test 2: Visual Decision</h1>
+
+    <p>
+        Watch the moving dots and decide which direction
+        the flock is moving.
+    </p>
+
+    <p><strong>A = Left</strong> &nbsp; | &nbsp; <strong>L = Right</strong></p>
+
+    <canvas id="canvas" width="650" height="300"></canvas>
+
+    <p id="status">Press Start Test when you're ready.</p>
+
+    <button id="startButton" onclick="startTest()">Start Test</button>
+
+    <div id="answerButtons" class="hidden">
+        <button onclick="answer(-1)">← Left (A)</button>
+        <button onclick="answer(1)">Right (L) →</button>
+    </div>
+
+    <div id="results"></div>
+
+    <button id="test3Button" class="hidden"
+        onclick="location.href='auditory-reaction.html'">
+        Begin Test 3 →
+    </button>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const statusText = document.getElementById("status");
+        const startButton = document.getElementById("startButton");
+        const answerButtons = document.getElementById("answerButtons");
+        const resultsDiv = document.getElementById("results");
+        const test3Button = document.getElementById("test3Button");
+
+        const TOTAL_CORRECT = 3;
+        const DOT_COUNT = 35;
+
+        let dots = [];
+        let direction = 1;
+        let testRunning = false;
+        let ready = false;
+        let correctTrials = [];
+        let allAttempts = [];
+        let trialStart = 0;
+        let animationId = null;
+        let trialTimeout = null;
+
+        function createDots() {
+            dots = [];
+
+            for (let i = 0; i < DOT_COUNT; i++) {
+                dots.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: 3 + Math.random() * 3,
+                    speed: 1.5 + Math.random() * 2.5,
+                    drift: (Math.random() - 0.5) * 0.5
+                });
+            }
+        }
+
+        function drawDots() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "black";
+
+            for (const dot of dots) {
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function animate() {
+            for (const dot of dots) {
+                dot.x += dot.speed * direction;
+                dot.y += dot.drift;
+
+                // Wrap dots around the edges.
+                if (dot.x > canvas.width + dot.radius) {
+                    dot.x = -dot.radius;
+                }
+
+                if (dot.x < -dot.radius) {
+                    dot.x = canvas.width + dot.radius;
+                }
+
+                if (dot.y > canvas.height) {
+                    dot.y = 0;
+                }
+
+                if (dot.y < 0) {
+                    dot.y = canvas.height;
+                }
+            }
+
+            drawDots();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function startTest() {
+            if (testRunning) return;
+
+            testRunning = true;
+            ready = false;
+            correctTrials = [];
+            allAttempts = [];
+
+            startButton.classList.add("hidden");
+            answerButtons.classList.add("hidden");
+            resultsDiv.innerHTML = "";
+            test3Button.classList.add("hidden");
+
+            nextTrial();
+        }
+
+        function nextTrial() {
+            ready = false;
+            answerButtons.classList.add("hidden");
+
+            if (correctTrials.length >= TOTAL_CORRECT) {
+                finishTest();
+                return;
+            }
+
+            statusText.textContent =
+                `Correct trials: ${correctTrials.length}/${TOTAL_CORRECT}. Get ready...`;
+
+            // Choose a random direction for this trial.
+            direction = Math.random() < 0.5 ? -1 : 1;
+
+            // Stop any previous animation.
+if (animationId !== null) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
+}
+
+createDots();
+drawDots();
+            // Random delay before the dots start moving.
+            const delay = 1500 + Math.random() * 2000;
+
+            trialTimeout = setTimeout(() => {
+                ready = true;
+                trialStart = performance.now();
+
+                statusText.textContent =
+                    "Which direction are the dots moving?";
+
+                answerButtons.classList.remove("hidden");
+
+                // Start the movement and keep it running.
+animate();
+            }, delay);
+        }
+
+        function answer(choice) {
+            if (!ready || !testRunning) return;
+
+            ready = false;
+            answerButtons.classList.add("hidden");
+
+            const reactionTime = Math.round(
+                performance.now() - trialStart
+            );
+
+            const correct = choice === direction;
+
+            allAttempts.push({
+                reactionTime: reactionTime,
+                correct: correct
+            });
+
+            if (correct) {
+                correctTrials.push(reactionTime);
+
+                statusText.textContent =
+                    `Correct! ${reactionTime} ms`;
+            } else {
+                statusText.textContent =
+                    `Incorrect! ${reactionTime} ms. Try another trial.`;
+            }
+
+            // Give the participant a moment before the next trial.
+            trialTimeout = setTimeout(nextTrial, 1000);
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.repeat) return;
+
+            const key = event.key.toLowerCase();
+
+            if (key === "a") {
+                answer(-1);
+            } else if (key === "l") {
+                answer(1);
+            }
+        });
+
+        function finishTest() {
+            testRunning = false;
+            ready = false;
+
+            if (animationId !== null) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            clearTimeout(trialTimeout);
+
+            const average =
+                correctTrials.reduce((sum, time) => sum + time, 0)
+                / correctTrials.length;
+
+            const accuracy =
+                (correctTrials.length / allAttempts.length) * 100;
+
+            const resultData = {
+                trials: correctTrials,
+                average: Math.round(average),
+                attempts: allAttempts,
+                accuracy: Math.round(accuracy),
+                totalAttempts: allAttempts.length
+            };
+
+            sessionStorage.setItem(
+                "visualDecisionResults",
+                JSON.stringify(resultData)
+            );
+
+            statusText.textContent = "Test 2 complete!";
+
+            resultsDiv.innerHTML = `
+                <h2>Test Complete!</h2>
+                <p>Correct trials: ${correctTrials.length}</p>
+                <p>Average reaction time: ${Math.round(average)} ms</p>
+                <p>Accuracy: ${Math.round(accuracy)}%</p>
+                <p>Total attempts: ${allAttempts.length}</p>
+            `;
+
+            test3Button.classList.remove("hidden");
+        }
+    </script>
+
+</body>
+</html>

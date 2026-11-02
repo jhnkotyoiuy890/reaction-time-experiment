@@ -1,0 +1,279 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test 3 - Auditory Decision</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #1a2a4a;
+            color: white;
+            text-align: center;
+            padding: 30px 15px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .sound-icon {
+            font-size: 100px;
+            margin: 30px;
+        }
+
+        button {
+            background: #3478f6;
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            margin: 8px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #58657d;
+            cursor: not-allowed;
+        }
+
+        #status {
+            font-size: 20px;
+            margin: 20px;
+        }
+
+        #results {
+            margin-top: 25px;
+            font-size: 18px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Test 3: Auditory Decision</h1>
+
+    <p>Listen to the tone and identify its pitch.</p>
+
+    <p><strong>A = High pitch</strong> &nbsp; | &nbsp;
+       <strong>L = Low pitch</strong></p>
+
+    <div class="sound-icon">🎧</div>
+
+    <p id="status">Press Start Test when you're ready.</p>
+
+    <button id="startButton" onclick="startTest()">Start Test</button>
+
+    <div id="answerButtons" class="hidden">
+        <button onclick="answer('high')">High Pitch (A)</button>
+        <button onclick="answer('low')">Low Pitch (L)</button>
+    </div>
+
+    <div id="results"></div>
+
+    <button id="resultsButton" class="hidden"
+        onclick="location.href='results.html'">
+        See Total Results →
+    </button>
+
+    <script>
+        const statusText = document.getElementById("status");
+        const startButton = document.getElementById("startButton");
+        const answerButtons = document.getElementById("answerButtons");
+        const resultsDiv = document.getElementById("results");
+        const resultsButton = document.getElementById("resultsButton");
+
+        const TOTAL_CORRECT = 3;
+
+        let audioContext;
+        let correctTrials = [];
+        let allAttempts = [];
+        let currentPitch = "";
+        let testRunning = false;
+        let ready = false;
+        let trialStart = 0;
+        let trialTimeout = null;
+
+        async function startTest() {
+            if (testRunning) return;
+
+            // Audio must be initialized after the user clicks.
+            if (!audioContext) {
+                audioContext = new (window.AudioContext ||
+                    window.webkitAudioContext)();
+            }
+
+            if (audioContext.state === "suspended") {
+                await audioContext.resume();
+            }
+
+            testRunning = true;
+            ready = false;
+            correctTrials = [];
+            allAttempts = [];
+
+            startButton.classList.add("hidden");
+            answerButtons.classList.add("hidden");
+            resultsButton.classList.add("hidden");
+            resultsDiv.innerHTML = "";
+
+            nextTrial();
+        }
+
+       function playTone(frequency) {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = "triangle";
+    oscillator.frequency.value = frequency;
+
+    const startTime = audioContext.currentTime + 0.05;
+
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(
+        0.3,
+        startTime + 0.015
+    );
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        startTime + 0.35
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.36);
+
+    // Schedule the reaction timer to match the sound.
+    const delayUntilSound =
+        (startTime - audioContext.currentTime) * 1000;
+
+    setTimeout(() => {
+        trialStart = performance.now();
+        ready = true;
+
+        statusText.textContent = "Which pitch did you hear?";
+        answerButtons.classList.remove("hidden");
+    }, delayUntilSound);
+}
+
+        function nextTrial() {
+            ready = false;
+            answerButtons.classList.add("hidden");
+
+            if (correctTrials.length >= TOTAL_CORRECT) {
+                finishTest();
+                return;
+            }
+
+            statusText.textContent =
+                `Correct trials: ${correctTrials.length}/${TOTAL_CORRECT}. Listen carefully...`;
+
+            // Randomly select high or low pitch.
+            currentPitch = Math.random() < 0.5 ? "high" : "low";
+
+            // Random waiting period: 1.5–4 seconds.
+            const delay = 1500 + Math.random() * 2500;
+
+            trialTimeout = setTimeout(() => {
+                const frequency =
+                    currentPitch === "high" ? 880 : 220;
+
+                // Start measuring immediately before the tone.
+               playTone(frequency);
+            }, delay);
+        }
+
+        function answer(choice) {
+            if (!ready || !testRunning) return;
+
+            ready = false;
+            answerButtons.classList.add("hidden");
+
+            const reactionTime = Math.round(
+                performance.now() - trialStart
+            );
+
+            const correct = choice === currentPitch;
+
+            allAttempts.push({
+                reactionTime: reactionTime,
+                correct: correct
+            });
+
+            if (correct) {
+                correctTrials.push(reactionTime);
+
+                statusText.textContent =
+                    `Correct! ${reactionTime} ms`;
+            } else {
+                statusText.textContent =
+                    `Incorrect! ${reactionTime} ms. Try another trial.`;
+            }
+
+            trialTimeout = setTimeout(nextTrial, 1000);
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.repeat) return;
+
+            const key = event.key.toLowerCase();
+
+            if (key === "a") {
+                answer("high");
+            } else if (key === "l") {
+                answer("low");
+            }
+        });
+
+        function finishTest() {
+            testRunning = false;
+            ready = false;
+
+            clearTimeout(trialTimeout);
+
+            const average =
+                correctTrials.reduce((sum, time) => sum + time, 0)
+                / correctTrials.length;
+
+            const accuracy =
+                (correctTrials.length / allAttempts.length) * 100;
+
+            const resultData = {
+                trials: correctTrials,
+                average: Math.round(average),
+                attempts: allAttempts,
+                accuracy: Math.round(accuracy),
+                totalAttempts: allAttempts.length
+            };
+
+            sessionStorage.setItem(
+                "auditoryReactionResults",
+                JSON.stringify(resultData)
+            );
+
+            statusText.textContent = "Test 3 complete!";
+
+            resultsDiv.innerHTML = `
+                <h2>Test Complete!</h2>
+                <p>Correct trials: ${correctTrials.length}</p>
+                <p>Average reaction time: ${Math.round(average)} ms</p>
+                <p>Accuracy: ${Math.round(accuracy)}%</p>
+                <p>Total attempts: ${allAttempts.length}</p>
+            `;
+
+            resultsButton.classList.remove("hidden");
+        }
+    </script>
+
+</body>
+</html>
